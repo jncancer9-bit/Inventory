@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supplies Ledger Card</title>
+<style>
+:root{color-scheme:light}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:#e9ecef;color:#000;font:15px/1.35 "Times New Roman",Times,serif;padding:16px}
+.sheet{max-width:1150px;margin:0 auto;background:#fff;padding:18px 22px 24px}
+.appx{text-align:right;font-style:italic;font-size:22px}
+h1{font:700 21px "Times New Roman",serif;text-align:center;margin:6px 0 22px}
+.ent{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-weight:700;margin-bottom:6px}
+.ent label{display:flex;gap:6px;align-items:baseline}
+input,select{font:inherit;color:#000;background:transparent;border:0;border-radius:0;padding:1px 3px;min-width:0}
+input.dup{border-bottom:2px solid #b3261e!important;background:#fde2e0!important}
+input:focus,select:focus{outline:2px solid #1a4fd6;outline-offset:0}
+.ent input{font-weight:700;border-bottom:1px dotted #777}
+table{border-collapse:collapse;width:100%}
+.hdr td{border:2px solid #000;padding:1px 4px}
+.hdr label{display:flex;gap:6px;align-items:baseline}
+.hdr input{flex:1;width:100%}
+.led{min-width:900px;table-layout:fixed}
+.led th,.led td{border:2px solid #000;padding:3px 5px;text-align:right;font-size:14px;font-variant-numeric:tabular-nums;height:34px}
+.led th{text-align:center;font-weight:700;height:auto}
+.led th.s{font-weight:400}
+.led th.g{font-style:italic}
+.led td.l{text-align:left}
+.led td.c{text-align:center}
+.led tr.bad td{background:#fde2e0}
+.led .act{border:0;width:30px;padding:0;text-align:center}
+.led td.dc{position:relative}
+.led td.dc button{position:absolute;right:2px;top:50%;transform:translateY(-50%);border:0;background:none;color:#b3261e;font-size:18px;line-height:1;cursor:pointer;padding:0 3px}
+.scroll{overflow-x:auto}
+.entry{margin-top:22px;background:#f1f4f8;border:1px solid #b8c4d0;padding:14px;font-family:"Segoe UI",system-ui,sans-serif;font-size:14px}
+.entry h2{font-size:15px;margin:0 0 10px}
+.erow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 14px;align-items:end}
+.entry label{display:block;font-size:12.5px;color:#444}
+.entry input,.entry select{width:100%;border-bottom:1.5px solid #8895a5;background:#fff;padding:5px 4px}
+button.b{font:inherit;cursor:pointer;border:1.5px solid #14213d;background:#14213d;color:#fff;padding:8px 14px}
+button.b.g{background:#fff;color:#14213d}
+#msg{min-height:20px;margin-top:8px;font-size:14px;color:#b3261e}
+.bar{max-width:1150px;margin:0 auto 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:"Segoe UI",system-ui,sans-serif;font-size:14px}
+.bar select,.bar input{background:#fff;border:1.5px solid #8895a5;padding:6px 8px;max-width:100%}
+.bar .sp{flex:1}
+.tab{font:inherit;cursor:pointer;border:1.5px solid #14213d;background:#fff;color:#14213d;padding:7px 16px}
+.tab.on{background:#14213d;color:#fff}
+.sum th,.sum td{border:2px solid #000;padding:5px 8px;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+.sum th{text-align:center}
+.sum td.l{text-align:left}
+.sum tr.cat td{font-weight:700;background:#eef1f5}
+.sum tr.it td.l{padding-left:26px}
+.sum tr.tot td{font-weight:700;border-top:3px double #000}
+.sum td.c{text-align:center}
+.sum .low{color:#b3261e;font-weight:700}
+.sub{text-align:center;margin:-12px 0 18px}
+.foot{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-family:"Segoe UI",system-ui,sans-serif}
+.foot .sp{flex:1}
+.note{font:12.5px "Segoe UI",system-ui,sans-serif;color:#555;margin-top:12px}
+@page{size:landscape;margin:10mm}
+@media print{.bar{display:none}body{background:#fff;padding:0}.sheet{padding:0;max-width:none}.entry,.foot,.note,#msg,.act,.led td.dc button{display:none}.ent input{border:0}.scroll{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="bar">
+<button class="tab on" id="tL" type="button">Ledger Card</button>
+<button class="tab" id="tS" type="button">Monthly Summary</button>
+<button class="tab" id="tM" type="button">Masterlist</button>
+<button class="tab" id="tA" type="button">Add Item</button>
+</div>
+<div class="bar" id="itemBar">
+<select id="isel" aria-label="Supply item"></select>
+<button class="b g" id="inew" type="button">+ New item</button>
+<button class="b g" id="idel" type="button">Delete item</button>
+<span class="sp"></span>
+<label>Category <select id="cat"></select></label>
+</div>
+<div class="bar" id="monBar" hidden>
+<label>Month <input type="month" id="mo"></label>
+<span class="sp"></span>
+<button class="b g" id="scsv" type="button">Download CSV</button>
+<button class="b g" id="sprt" type="button">Print</button>
+</div>
+
+<div class="bar" id="mlBar" hidden>
+<label>Category <select id="mcat"></select></label>
+<input id="msrch" type="search" placeholder="Search item, code or description" aria-label="Search masterlist">
+<span class="sp"></span>
+<button class="b g" id="mcsv" type="button">Download CSV</button>
+<button class="b g" id="mprt" type="button">Print</button>
+</div>
+
+<div class="sheet" id="vL">
+<div class="appx">Appendix 57</div>
+<h1>SUPPLIES LEDGER CARD</h1>
+
+<div class="ent">
+<label>Entity Name :<input id="entity" size="42"></label>
+<label>Fund Cluster :<input id="fund" size="14"></label>
+</div>
+
+<table class="hdr">
+<tr><td style="width:62%"><label>Item :<input id="item"></label></td><td><label>Item Code :<input id="code"><span id="cwarn" role="alert" style="color:#b3261e;font-size:12px;white-space:nowrap"></span></label></td></tr>
+<tr><td><label>Description :<input id="desc"></label></td><td><label>Re-order Point :<input id="rop" type="number" min="0" step="any"></label></td></tr>
+<tr><td colspan="2"><label>Unit of Measurement :<input id="uom"></label></td></tr>
+</table>
+
+<div class="scroll"><table class="led">
+<colgroup><col style="width:9%"><col style="width:13%"><col style="width:6.5%"><col style="width:7%"><col style="width:9.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:9.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:9.5%"><col style="width:9%"></colgroup>
+<thead>
+<tr><th rowspan="2">Date</th><th rowspan="2">Reference</th>
+<th colspan="3" class="g">Receipt</th><th colspan="3" class="g">Issue</th><th colspan="3" class="g">Balance</th>
+<th rowspan="2">No. of Days<br>to Consume</th></tr>
+<tr><th class="s">Qty.</th><th class="s">Unit Cost</th><th class="s">Total Cost</th>
+<th class="s">Qty.</th><th class="s">Unit Cost</th><th class="s">Total Cost</th>
+<th class="s">Qty.</th><th class="s">Unit Cost</th><th class="s">Total Cost</th></tr>
+</thead>
+<tbody id="tb"></tbody>
+</table></div>
+
+<form class="entry" id="f" autocomplete="off">
+<h2>Add transaction</h2>
+<div class="erow">
+<label>Date<input id="d" type="date" required></label>
+<label>Reference<input id="r" placeholder="e.g., IAR 2026-11-004"></label>
+<label>Type<select id="t"><option value="B">Beginning balance</option><option value="R">Receipt</option><option value="I">Issue</option></select></label>
+<label>Quantity<input id="q" type="number" min="0" step="any" required></label>
+<label id="ucw">Unit cost (₱)<input id="u" type="number" min="0" step="any"></label>
+<label>No. of days to consume<input id="days" type="number" min="0" step="any"></label>
+<button class="b" type="submit">Add entry</button>
+</div>
+<div id="msg" role="alert"></div>
+</form>
+
+<div class="foot">
+<button class="b g" id="csv" type="button">Download CSV</button>
+<button class="b g" id="prt" type="button">Print</button>
+<span class="sp"></span>
+<button class="b g" id="clr" type="button">Clear all entries</button>
+</div>
+<p class="note">Balance unit cost = balance total cost ÷ balance quantity (moving average), recomputed after every receipt. The unit cost is rounded to two decimals and stays fixed on every issue until the next receipt changes it. Issue total cost = quantity × that unit cost.</p>
+</div>
+
+<div class="sheet" id="vS" hidden>
+<h1>MONTHLY SUMMARY OF SUPPLIES INVENTORY</h1>
+<p class="sub" id="ssub"></p>
+<table class="sum">
+<thead><tr><th style="text-align:left">Category / Item</th><th>Beginning Balance</th><th>Receipts</th><th>Issues</th><th>Ending Balance</th></tr></thead>
+<tbody id="sb"></tbody>
+</table>
+<p class="note">Amounts in pesos, from the ledger cards. Beginning Balance = cost on hand at the start of the month; Ending Balance = Beginning + Receipts − Issues.</p>
+</div>
+
+<div class="sheet" id="vA" hidden>
+<h1>ADD ITEM TO MASTERLIST</h1>
+<form class="entry" id="af" autocomplete="off" style="margin-top:0">
+<div class="erow">
+<label>Category<select id="acat"></select></label>
+<label>Item Code<input id="acode" placeholder="e.g., OS-001"></label>
+<label>Item<input id="aitem" required placeholder="e.g., Bond paper, A4"></label>
+<label>Description<input id="adesc"></label>
+<label>Unit of Measurement<input id="auom" placeholder="e.g., ream, box, pc"></label>
+<label>Re-order Point<input id="arop" type="number" min="0" step="any"></label>
+</div>
+<h2 style="margin:16px 0 8px">Beginning balance (optional)</h2>
+<div class="erow">
+<label>Date<input id="abd" type="date"></label>
+<label>Quantity<input id="abq" type="number" min="0" step="any"></label>
+<label>Unit cost (₱)<input id="abu" type="number" min="0" step="any"></label>
+<button class="b" type="submit">Add to masterlist</button>
+</div>
+<div id="amsg" role="status" style="margin-top:10px"></div>
+</form>
+<p class="note">Leave the beginning balance empty if the item has no stock yet. You can enter a beginning balance or receipts later on its ledger card.</p>
+</div>
+
+<div class="sheet" id="vM" hidden>
+<h1>MASTERLIST OF SUPPLIES INVENTORY</h1>
+<p class="sub" id="msub"></p>
+<div class="scroll"><table class="sum" style="min-width:900px">
+<thead><tr><th>Item Code</th><th style="text-align:left">Item / Description</th><th>Unit</th><th>Qty. on Hand</th><th>Unit Cost</th><th>Total Cost</th><th>Re-order Point</th><th>Status</th><th class="act"></th></tr></thead>
+<tbody id="mb"></tbody>
+</table></div>
+<p class="note">Quantities and costs are the latest balance on each item's ledger card. Click "Open card" to view or add entries.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY='slc-v1';
+const CATS=['Office Supplies Inventory','Housekeeping/Cleaning Supplies','Electrical Supplies and Materials Inventory','Other Supplies Inventory'];
+const newItem=cat=>({id:'i'+Date.now()+Math.floor(Math.random()*999),cat:cat||CATS[0],item:'',code:'',desc:'',uom:'',rop:'',rows:[]});
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S)S={};
+if(!S.items){ // migrate older single-card data
+  const m=S.meta||{},it=newItem();
+  Object.assign(it,{item:m.item||'',code:m.code||'',desc:m.desc||'',uom:m.uom||'',rop:m.rop||'',rows:S.rows||[]});
+  S={entity:m.entity,fund:m.fund,items:[it],cur:it.id};
+}
+if(S.entity===undefined)S.entity='Zamboanga City Special Economic Zone Authority';
+if(S.fund===undefined)S.fund='Regular';
+if(!S.items.length)S.items.push(newItem());
+if(!S.items.some(i=>i.id===S.cur))S.cur=S.items[0].id;
+const cur=()=>S.items.find(i=>i.id===S.cur);
+const dupOf=(code,exceptId)=>{code=(code||'').trim().toLowerCase();return code?S.items.find(i=>i.id!==exceptId&&(i.code||'').trim().toLowerCase()===code):null};
+$('cat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
+['entity','fund'].forEach(i=>{$(i).value=S[i]||'';$(i).addEventListener('input',()=>{S[i]=$(i).value;save()})});
+['item','desc','uom','rop'].forEach(i=>{
+  $(i).addEventListener('input',()=>{cur()[i]=$(i).value;save();if(i==='rop')render();else fillSel()});
+});
+function codeCheck(){
+  const d=dupOf($('code').value,S.cur);
+  $('code').classList.toggle('dup',!!d);
+  $('cwarn').textContent=d?'Already used by '+(d.item||'another item'):'';
+  return !d;
+}
+$('code').addEventListener('input',()=>{if(codeCheck()){cur().code=$('code').value.trim();save();fillSel()}});
+$('code').addEventListener('change',()=>{
+  if(!codeCheck()){$('code').value=cur().code||'';setTimeout(()=>{$('cwarn').textContent='Duplicate code not saved. Kept '+($('code').value||'blank')+'.'},0);$('code').classList.remove('dup')}
+});
+function loadMeta(){const c=cur();['item','code','desc','uom','rop'].forEach(i=>$(i).value=c[i]||'');$('code').classList.remove('dup');$('cwarn').textContent='';$('cat').value=c.cat;fillSel();$('t').value=c.rows.length?'R':'B';typeUI()}
+function fillSel(){
+  $('isel').innerHTML=CATS.map(c=>{
+    const l=S.items.filter(i=>i.cat===c);
+    return l.length?`<optgroup label="${esc(c)}">`+l.map(i=>`<option value="${i.id}"${i.id===S.cur?' selected':''}>${esc((i.code?i.code+' – ':'')+(i.item||'(new item)'))}</option>`).join('')+'</optgroup>':'';
+  }).join('');
+}
+$('isel').onchange=()=>{S.cur=$('isel').value;save();loadMeta();render()};
+$('cat').onchange=()=>{cur().cat=$('cat').value;save();fillSel()};
+$('inew').onclick=()=>{const n=newItem(cur().cat);S.items.push(n);S.cur=n.id;save();loadMeta();render();$('item').focus()};
+$('idel').onclick=()=>{
+  if(!confirm('Delete this item and all its entries?'))return;
+  S.items=S.items.filter(i=>i.id!==S.cur);
+  if(!S.items.length)S.items.push(newItem());
+  S.cur=S.items[0].id;save();loadMeta();render();
+};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const fmt=n=>n.toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fq=n=>n.toLocaleString('en-PH',{maximumFractionDigits:4});
+
+const r2=n=>Math.round((n+Number.EPSILON)*100)/100;
+function compute(rows){
+  rows=rows||cur().rows;
+  let q=0,c=0,fu=0;
+  return rows.map(r=>{
+    const o={...r,bad:false};
+    if(r.type==='I'){
+      if(r.qty>q+1e-9)o.bad=true;
+      o.iu=fu;o.ic=r2(r.qty*fu);q-=r.qty;c-=o.ic;
+      if(q<1e-9){q=0;c=0}
+    }else{
+      const t=r2(r.qty*r.cost);
+      if(r.type==='R')o.rc=t;
+      q+=r.qty;c+=t;
+      fu=q>0?r2(c/q):0;
+    }
+    o.bq=q;o.bc=c;o.bu=q>0?fu:0;
+    return o;
+  });
+}
+const BLANK='<td></td>'.repeat(12);
+function render(){
+  const rows=compute();
+  let h=rows.map((r,i)=>{
+    const R=r.type==='R',B=r.type==='B';
+    return `<tr class="${r.bad?'bad':''}"><td class="l">${esc(r.date)}</td><td class="l">${esc(B?'Beginning Balance':r.ref)}</td>`+
+    (B?`<td></td><td></td><td></td><td></td><td></td><td></td>`:R?`<td>${fq(r.qty)}</td><td>${fmt(r.cost)}</td><td>${fmt(r.rc)}</td><td></td><td></td><td></td>`
+      :`<td></td><td></td><td></td><td>${fq(r.qty)}</td><td>${fmt(r.iu)}</td><td>${fmt(r.ic)}</td>`)+
+    `<td>${fq(r.bq)}</td><td>${fmt(r.bu)}</td><td>${fmt(r.bc)}</td><td class="c dc">${r.days===''||r.days==null?'':fq(r.days)}<button type="button" data-i="${i}" aria-label="Delete entry ${i+1}" title="Delete entry">×</button></td></tr>`;
+  }).join('');
+  const hasB=rows.some(r=>r.type==='B');
+  if(!hasB)h=`<tr><td></td><td class="l">Beginning Balance</td>${'<td></td>'.repeat(10)}</tr>`+h;
+  for(let i=rows.length+(hasB?0:1);i<14;i++)h+=`<tr>${BLANK}</tr>`;
+  $('tb').innerHTML=h;
+  const rop=parseFloat(cur().rop),last=rows[rows.length-1];
+  if(rows.some(r=>r.bad))$('msg').textContent='Highlighted row issues more than the balance on hand. Fix or delete it.';
+  else if(last&&!isNaN(rop)&&last.bq<=rop)$('msg').textContent='Stock is at or below the re-order point. Time to request replenishment.';
+  else $('msg').textContent='';
+}
+
+function typeUI(){
+  const t=$('t').value;
+  $('ucw').style.visibility=t==='I'?'hidden':'visible';
+  $('r').disabled=t==='B';
+  if(t==='B')$('r').value='Beginning Balance';else if($('r').value==='Beginning Balance')$('r').value='';
+}
+$('t').addEventListener('change',typeUI);
+$('f').addEventListener('submit',e=>{
+  e.preventDefault();
+  const type=$('t').value,qty=parseFloat($('q').value),cost=parseFloat($('u').value);
+  if(!(qty>0)){$('msg').textContent='Enter a quantity greater than zero.';return}
+  if(type!=='I'&&!(cost>=0)){$('msg').textContent='Enter the unit cost for this receipt.';return}
+  if(type==='B'&&cur().rows.some(r=>r.type==='B')){$('msg').textContent='A beginning balance is already entered. Delete it first to replace it.';return}
+  const cs=compute(),bal=cs.length?cs[cs.length-1].bq:0;
+  if(type==='I'&&qty>bal+1e-9){$('msg').textContent='Cannot issue '+fq(qty)+'. Only '+fq(bal)+' on hand.';return}
+  const dv=parseFloat($('days').value);
+  cur().rows.push({date:$('d').value,ref:type==='B'?'Beginning Balance':$('r').value.trim(),type,qty,cost:type==='I'?0:cost,days:isNaN(dv)?'':dv});
+  cur().rows.sort((a,b)=>(a.type==='B'?-1:0)-(b.type==='B'?-1:0)||(a.date<b.date?-1:a.date>b.date?1:0));
+  save();render();
+  ['q','u','r','days'].forEach(i=>$(i).value='');
+  if($('t').value==='B')$('t').value='R';
+  typeUI();$('q').focus();
+});
+$('tb').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-i]');if(!b)return;
+  if(confirm('Delete this entry? Later balances will be recalculated.')){cur().rows.splice(+b.dataset.i,1);save();render()}
+});
+$('clr').onclick=()=>{if(cur().rows.length&&confirm('Delete all entries for this item?')){cur().rows=[];save();render()}};
+$('prt').onclick=()=>window.print();
+$('csv').onclick=()=>{
+  const h=['Date','Reference','Receipt Qty','Receipt Unit Cost','Receipt Total Cost','Issue Qty','Issue Unit Cost','Issue Total Cost','Balance Qty','Balance Unit Cost','Balance Total Cost','No. of Days to Consume'];
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const lines=[h.join(',')].concat(compute().map(r=>{
+    const R=r.type==='R';
+    return [q(r.date),q(r.type==='B'?'Beginning Balance':r.ref),R?r.qty:'',R?r.cost.toFixed(2):'',R?r.rc.toFixed(2):'',R||r.type==='B'?'':r.qty,R||r.type==='B'?'':r.iu.toFixed(2),R||r.type==='B'?'':r.ic.toFixed(2),r.bq,r.bu.toFixed(2),r.bc.toFixed(2),r.days==null?'':r.days].join(',');
+  }));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download=(cur().code||'supplies-ledger-card')+'.csv';a.click();
+};
+$('d').valueAsDate=new Date();
+if(!cur().rows.length)$('t').value='B';
+typeUI();loadMeta();render();
+
+// ---- Monthly summary ----
+$('mo').value=new Date().toISOString().slice(0,7);
+function summaryData(){
+  const m=$('mo').value;if(!m)return null;
+  const st=m+'-01',en=m+'-31';
+  const cats=CATS.map(c=>({c,items:S.items.filter(i=>i.cat===c).map(i=>{
+    const rs=compute(i.rows);let op=0,rec=0,iss=0,end=0;
+    rs.forEach(r=>{
+      if(r.date<st)op=r.bc;
+      if(r.date<=en)end=r.bc;
+      if(r.date>=st&&r.date<=en){
+        if(r.type==='B')op+=r2(r.qty*r.cost);
+        else if(r.type==='R')rec+=r.rc;else iss+=r.ic;
+      }
+    });
+    return{name:(i.code?i.code+' – ':'')+(i.item||'(unnamed item)'),op,rec,iss,end};
+  })}));
+  return{m,cats};
+}
+const ssum=(l,k)=>l.reduce((a,x)=>a+x[k],0);
+function renderSummary(){
+  const d=summaryData();if(!d)return;
+  const [y,mm]=d.m.split('-');
+  $('ssub').textContent='For the month of '+new Date(+y,+mm-1,1).toLocaleString('en-US',{month:'long',year:'numeric'})+' · '+(S.entity||'')+' · Fund Cluster: '+(S.fund||'');
+  let h='',T={op:0,rec:0,iss:0,end:0};
+  d.cats.forEach(g=>{
+    const t={op:ssum(g.items,'op'),rec:ssum(g.items,'rec'),iss:ssum(g.items,'iss'),end:ssum(g.items,'end')};
+    for(const k in T)T[k]+=t[k];
+    h+=`<tr class="cat"><td class="l">${esc(g.c)}</td><td>${fmt(t.op)}</td><td>${fmt(t.rec)}</td><td>${fmt(t.iss)}</td><td>${fmt(t.end)}</td></tr>`;
+    g.items.forEach(x=>h+=`<tr class="it"><td class="l">${esc(x.name)}</td><td>${fmt(x.op)}</td><td>${fmt(x.rec)}</td><td>${fmt(x.iss)}</td><td>${fmt(x.end)}</td></tr>`);
+  });
+  h+=`<tr class="tot"><td class="l">TOTAL</td><td>${fmt(T.op)}</td><td>${fmt(T.rec)}</td><td>${fmt(T.iss)}</td><td>${fmt(T.end)}</td></tr>`;
+  $('sb').innerHTML=h;
+}
+function masterData(){
+  const cf=$('mcat').value,q=($('msrch').value||'').toLowerCase();
+  return CATS.filter(c=>!cf||c===cf).map(c=>({c,items:S.items.filter(i=>i.cat===c&&((i.code||'')+' '+(i.item||'')+' '+(i.desc||'')).toLowerCase().includes(q)).sort((x,y)=>(x.code||'').localeCompare(y.code||'',undefined,{numeric:true})).map(i=>{
+    const rs=compute(i.rows),l=rs[rs.length-1]||{bq:0,bu:0,bc:0},rop=parseFloat(i.rop);
+    return{id:i.id,dup:!!dupOf(i.code,i.id),code:i.code||'',item:i.item||'(unnamed item)',desc:i.desc||'',uom:i.uom||'',qty:l.bq,uc:l.bu,tc:l.bc,rop:isNaN(rop)?'':rop,
+      st:!rs.length?'No entries':l.bq<=0?'Out of stock':(!isNaN(rop)&&l.bq<=rop)?'Re-order':'In stock'};
+  })}));
+}
+function renderMaster(){
+  const d=masterData();let h='',T=0,n=0;
+  $('msub').textContent=(S.entity||'')+' · Fund Cluster: '+(S.fund||'')+' · As of '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  d.forEach(g=>{
+    const t=ssum(g.items,'tc');T+=t;n+=g.items.length;
+    h+=`<tr class="cat"><td class="l" colspan="5">${esc(g.c)} (${g.items.length})</td><td>${fmt(t)}</td><td colspan="3"></td></tr>`;
+    g.items.forEach(x=>h+=`<tr class="it"><td class="c${x.dup?' low':''}"${x.dup?' title="Duplicate item code"':''}>${esc(x.code)}${x.dup?'<br><small>Duplicate code</small>':''}</td><td class="l">${esc(x.item)}${x.desc?'<br><small>'+esc(x.desc)+'</small>':''}</td><td class="c">${esc(x.uom)}</td><td>${fq(x.qty)}</td><td>${fmt(x.uc)}</td><td>${fmt(x.tc)}</td><td>${x.rop===''?'':fq(x.rop)}</td><td class="c${x.st==='Re-order'||x.st==='Out of stock'?' low':''}">${x.st}</td><td class="act"><button class="b g" type="button" data-id="${x.id}">Open card</button></td></tr>`);
+  });
+  h+=`<tr class="tot"><td class="l" colspan="5">TOTAL (${n} items)</td><td>${fmt(T)}</td><td colspan="3"></td></tr>`;
+  $('mb').innerHTML=h;
+}
+function show(v){
+  const sl=v==='L',ss=v==='S',sm=v==='M',sa=v==='A';
+  $('vA').hidden=!sa;$('tA').classList.toggle('on',sa);
+  $('vL').hidden=!sl;$('itemBar').hidden=!sl;
+  $('vS').hidden=!ss;$('monBar').hidden=!ss;
+  $('vM').hidden=!sm;$('mlBar').hidden=!sm;
+  $('tL').classList.toggle('on',sl);$('tS').classList.toggle('on',ss);$('tM').classList.toggle('on',sm);
+  if(ss)renderSummary();if(sm)renderMaster();
+}
+$('mcat').innerHTML='<option value="">All categories</option>'+CATS.map(c=>`<option>${c}</option>`).join('');
+$('mcat').onchange=renderMaster;$('msrch').oninput=renderMaster;
+$('mprt').onclick=()=>window.print();
+$('mb').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-id]');if(!b)return;
+  S.cur=b.dataset.id;save();loadMeta();render();show('L');
+});
+$('mcsv').onclick=()=>{
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const L=['Category,Item Code,Item,Description,Unit,Qty on Hand,Unit Cost,Total Cost,Re-order Point,Status'];
+  masterData().forEach(g=>g.items.forEach(x=>L.push([q(g.c),q(x.code),q(x.item),q(x.desc),q(x.uom),x.qty,x.uc.toFixed(2),x.tc.toFixed(2),x.rop,q(x.st)].join(','))));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([L.join('\n')],{type:'text/csv'}));
+  a.download='masterlist-supplies-inventory.csv';a.click();
+};
+$('acat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
+$('abd').valueAsDate=new Date();
+$('af').addEventListener('submit',e=>{
+  e.preventDefault();
+  const m=$('amsg'),name=$('aitem').value.trim(),code=$('acode').value.trim();
+  m.style.color='#b3261e';
+  if(!name){m.textContent='Enter the item name.';return}
+  {const d=dupOf(code);if(d){$('acode').classList.add('dup');m.textContent='Item code '+code+' is already used by '+(d.item||'another item')+' ('+d.cat+').';return}}
+  const bq=parseFloat($('abq').value),bu=parseFloat($('abu').value),hasB=$('abq').value!==''||$('abu').value!=='';
+  if(hasB&&(!(bq>0)||!(bu>=0))){m.textContent='For a beginning balance, enter both quantity and unit cost.';return}
+  const n=newItem($('acat').value);
+  Object.assign(n,{item:name,code,desc:$('adesc').value.trim(),uom:$('auom').value.trim(),rop:$('arop').value});
+  if(hasB)n.rows.push({date:$('abd').value||new Date().toISOString().slice(0,10),ref:'Beginning Balance',type:'B',qty:bq,cost:bu,days:''});
+  S.items.push(n);save();fillSel();
+  m.style.color='#1d6f42';
+  m.innerHTML='Added <b>'+esc(name)+'</b> to '+esc(n.cat)+'. <button class="b g" type="button" id="aM">View masterlist</button> <button class="b g" type="button" id="aC">Open ledger card</button>';
+  $('aM').onclick=()=>show('M');
+  $('aC').onclick=()=>{S.cur=n.id;save();loadMeta();render();show('L')};
+  ['acode','aitem','adesc','auom','arop','abq','abu'].forEach(i=>$(i).value='');$('acode').classList.remove('dup');
+  $('aitem').focus();
+});
+$('acode').addEventListener('input',()=>{
+  const d=dupOf($('acode').value),m=$('amsg');
+  $('acode').classList.toggle('dup',!!d);
+  m.style.color='#b3261e';m.textContent=d?'Item code '+$('acode').value.trim()+' is already used by '+(d.item||'another item')+' ('+d.cat+').':'';
+});
+$('tA').onclick=()=>show('A');
+$('tL').onclick=()=>show('L');$('tS').onclick=()=>show('S');$('tM').onclick=()=>show('M');
+$('mo').oninput=renderSummary;
+$('sprt').onclick=()=>window.print();
+$('scsv').onclick=()=>{
+  const d=summaryData();if(!d)return;
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const L=['Category,Item,Beginning Balance,Receipts,Issues,Ending Balance'];
+  d.cats.forEach(g=>g.items.forEach(x=>L.push([q(g.c),q(x.name),x.op.toFixed(2),x.rec.toFixed(2),x.iss.toFixed(2),x.end.toFixed(2)].join(','))));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([L.join('\n')],{type:'text/csv'}));
+  a.download='monthly-summary-'+d.m+'.csv';a.click();
+};
+</script>
+</body>
+</html>
